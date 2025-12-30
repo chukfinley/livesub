@@ -1,21 +1,17 @@
 # livesub
 
-Real-time transcription overlay for Linux desktop audio using Groq Whisper API.
+Real-time transcription overlay for Linux desktop audio.
 
-## Features
+## Modes
 
-- Transcribes system audio (movies, YouTube, calls, etc.)
-- Overlay window stays on top
-- Two-line display with smart text fading
-- Transcript history saved to file
-- Filters common Whisper hallucinations
+- **Groq API** (default) - Fast, cloud-based, requires API key
+- **Local** - Offline, uses faster-whisper, no API key needed
 
 ## Requirements
 
 - Linux with PulseAudio/PipeWire
 - Python 3.13+
 - [uv](https://github.com/astral-sh/uv)
-- Groq API key
 
 ## Installation
 
@@ -23,14 +19,35 @@ Real-time transcription overlay for Linux desktop audio using Groq Whisper API.
 git clone https://github.com/chukfinley/livesub.git
 cd livesub
 uv sync
+```
+
+For Groq API mode, create `.env`:
+```bash
 echo "GROQ=your_api_key_here" > .env
 ```
 
 ## Usage
 
 ```bash
+# Groq API (fast, cloud)
 ./livesub
+
+# Local Whisper (offline)
+./livesub --local
+
+# Local with larger model (better accuracy)
+./livesub --local --model medium
 ```
+
+### Model sizes (--local)
+
+| Model | Size | Speed |
+|-------|------|-------|
+| tiny | 75 MB | Fastest |
+| base | 150 MB | Fast |
+| small | 500 MB | Medium |
+| medium | 1.5 GB | Slow |
+| large | 3 GB | Slowest |
 
 ### Add to PATH
 

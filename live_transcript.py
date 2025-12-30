@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Live Transcription Overlay - Transcribes system audio in real-time using Groq Whisper.
-Simple GTK-style UI with smart text fading.
+Live Transcription Overlay - Transcribes system audio in real-time.
+Supports both Groq API (cloud) and local Whisper (faster-whisper).
 """
 
+import argparse
 import os
 import sys
 import queue
@@ -16,13 +17,15 @@ from pathlib import Path
 import numpy as np
 from scipy.io import wavfile
 from dotenv import load_dotenv
-from groq import Groq
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QHBoxLayout, QWidget
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
 from PyQt6.QtGui import QFont
 
 
 load_dotenv()
+
+# Global mode flag
+USE_LOCAL = False
 
 # Configuration
 SAMPLE_RATE = 16000
@@ -136,9 +139,10 @@ class AudioCapture:
 
 class GroqTranscriber:
     def __init__(self):
+        from groq import Groq
         api_key = os.getenv('GROQ')
         if not api_key:
-            raise ValueError("GROQ API key not found")
+            raise ValueError("GROQ API key not found in .env")
         self.client = Groq(api_key=api_key)
 
     def transcribe(self, audio: np.ndarray, sample_rate: int) -> str:
@@ -157,6 +161,24 @@ class GroqTranscriber:
             return transcription.strip() if transcription else ""
         finally:
             os.unlink(temp_path)
+
+
+class LocalTranscriber:
+    def __init__(self, model_size: str = "base"):
+        from faster_whisper import WhisperModel
+        print(f"Loading local Whisper model '{model_size}'...")
+        self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        print("Model loaded.")
+
+    def transcribe(self, audio: np.ndarray, sample_rate: int) -> str:
+        segments, _ = self.model.transcribe(
+            audio,
+            language="de",
+            beam_size=1,
+            vad_filter=True,
+        )
+        text = " ".join(seg.text for seg in segments)
+        return text.strip()
 
 
 class TranscriptHistory:
@@ -294,9 +316,12 @@ class TranscriptionOverlay(QMainWindow):
 
 
 class LiveTranscriptionApp:
-    def __init__(self):
+    def __init__(self, use_local: bool = False, model_size: str = "base"):
         self.audio_capture = AudioCapture()
-        self.transcriber = GroqTranscriber()
+        if use_local:
+            self.transcriber = LocalTranscriber(model_size)
+        else:
+            self.transcriber = GroqTranscriber()
         self.running = False
 
     def transcription_loop(self, signals: TranscriptionSignals):
@@ -324,18 +349,25 @@ class LiveTranscriptionApp:
 
 
 def main():
-    print("Live Transcription - ESC to quit, C to clear")
-    print(f"History: {HISTORY_FILE.absolute()}")
+    parser = argparse.ArgumentParser(description="Live transcription overlay")
+    parser.add_argument("--local", action="store_true", help="Use local Whisper model instead of Groq API")
+    parser.add_argument("--model", default="base", help="Local model size: tiny, base, small, medium, large (default: base)")
+    args = parser.parse_args()
+
+    mode = "local" if args.local else "Groq API"
+    print(f"livesub - Mode: {mode}")
+    print("ESC to quit, C to clear")
 
     app = QApplication(sys.argv)
     overlay = TranscriptionOverlay()
     overlay.show()
 
-    transcription_app = LiveTranscriptionApp()
+    transcription_app = LiveTranscriptionApp(use_local=args.local, model_size=args.model)
     try:
         transcription_app.start(overlay.signals)
     except Exception as e:
         overlay.signals.error.emit(str(e))
+        print(f"Error: {e}", file=sys.stderr)
 
     app.aboutToQuit.connect(transcription_app.stop)
     sys.exit(app.exec())
