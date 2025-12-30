@@ -166,9 +166,8 @@ class GroqTranscriber:
 class LocalTranscriber:
     def __init__(self, model_size: str = "base"):
         from faster_whisper import WhisperModel
-        import huggingface_hub
-        # Enable download progress
-        huggingface_hub.constants.HF_HUB_DISABLE_PROGRESS_BARS = False
+        # Enable download progress via env var
+        os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "0"
         print(f"Loading local Whisper model '{model_size}'...")
         print("(First run will download the model)")
         self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
