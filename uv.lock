@@ -360,6 +360,7 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "scipy" },
     { name = "sounddevice" },
+    { name = "tqdm" },
 ]
 
 [package.metadata]
@@ -371,6 +372,7 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "scipy", specifier = ">=1.11.0" },
     { name = "sounddevice", specifier = ">=0.4.6" },
+    { name = "tqdm", specifier = ">=4.66.0" },
 ]
 
 [[package]]

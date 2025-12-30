@@ -166,13 +166,18 @@ class GroqTranscriber:
 class LocalTranscriber:
     def __init__(self, model_size: str = "base"):
         from faster_whisper import WhisperModel
-        from faster_whisper.utils import download_model
+        from huggingface_hub import snapshot_download
+        from tqdm import tqdm
 
-        print(f"Loading local Whisper model '{model_size}'...")
+        repo_id = f"Systran/faster-whisper-{model_size}"
+        print(f"Downloading model '{model_size}' from {repo_id}...")
 
-        # Download with progress bar first
-        model_path = download_model(model_size, output_dir=None)
-        print(f"Model path: {model_path}")
+        # Download with progress
+        model_path = snapshot_download(
+            repo_id,
+            local_files_only=False,
+        )
+        print(f"Model ready: {model_path}")
 
         self.model = WhisperModel(model_path, device="cpu", compute_type="int8")
         print("Model loaded.")
