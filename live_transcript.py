@@ -166,11 +166,15 @@ class GroqTranscriber:
 class LocalTranscriber:
     def __init__(self, model_size: str = "base"):
         from faster_whisper import WhisperModel
-        # Enable download progress via env var
-        os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "0"
+        from faster_whisper.utils import download_model
+
         print(f"Loading local Whisper model '{model_size}'...")
-        print("(First run will download the model)")
-        self.model = WhisperModel(model_size, device="cpu", compute_type="int8")
+
+        # Download with progress bar first
+        model_path = download_model(model_size, output_dir=None)
+        print(f"Model path: {model_path}")
+
+        self.model = WhisperModel(model_path, device="cpu", compute_type="int8")
         print("Model loaded.")
 
     def transcribe(self, audio: np.ndarray, sample_rate: int) -> str:
