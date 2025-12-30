@@ -1,7 +1,6 @@
 #!/bin/bash
-# Live Transcript Launcher
-# Add this to your PATH or symlink to /usr/local/bin/live-transcript
+# livesub launcher
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
 cd "$SCRIPT_DIR"
 exec uv run python live_transcript.py "$@"
